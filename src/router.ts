@@ -12,7 +12,7 @@ const WorkspaceView = () => import('./views/editor').then((views) => views.Works
 const EmbedView = () => import('./views/embed/EmbedView.vue')
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     // A Cloud document inside another site's page, read-only, without the editor around it. A
     // build without Cloud has none, and bundles none of the embed.
