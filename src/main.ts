@@ -13,6 +13,11 @@ async function start(): Promise<void> {
     const { boot } = await import('./boot')
     await boot()
   } catch (error) {
+    // UP Docs host: tell the page around the editor why it did not start.
+    if (new URLSearchParams(window.location.search).get('host') === 'up-docs') {
+      const detail = error instanceof Error ? `${error.name}: ${error.message}\n${error.stack ?? ''}` : String(error)
+      window.parent.postMessage({ type: 'up-designer:boot-failed', error: detail }, '*')
+    }
     await reportBootFailure(error)
   }
 }

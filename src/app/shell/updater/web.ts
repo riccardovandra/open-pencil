@@ -160,6 +160,8 @@ export function takeWebUpdate(update: WaitingUpdate): void {
 export function useWebUpdates(): void {
   // Plain HTTP away from localhost has no service workers, as some browsers do not.
   if (IS_TAURI || !('serviceWorker' in navigator)) return
+  // UP Docs serves the editor itself, with HTTP caching; no service worker.
+  if (new URLSearchParams(window.location.search).get('host') === 'up-docs') return
   const overlays = useOpenOverlays()
   // A first visit's worker taking control of the page is no new version.
   const controlledAtStart = navigator.serviceWorker.controller !== null
