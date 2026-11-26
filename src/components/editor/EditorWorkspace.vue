@@ -10,7 +10,6 @@ import { formatShortcut } from '@open-pencil/vue/editor/commands'
 import { useViewportKind } from '@open-pencil/vue/editor/viewport-kind'
 import { useMessages } from '@open-pencil/vue/i18n'
 
-import { floatingChatOpen } from '@/app/ai/chat/panel'
 import { provideTabEditorStore } from '@/app/editor/active-store'
 import { appRuntimeConfig } from '@/app/runtime/config'
 import { interfaceScaleFactor } from '@/app/shell/interface-scale'
@@ -19,7 +18,6 @@ import { appMenuShortcut } from '@/app/shell/menu/shortcut'
 import { remToPx } from '@/app/shell/root-font-size'
 import type { Tab } from '@/app/tabs'
 import CanvasSplitRoot from '@/components/canvas/CanvasSplitRoot.vue'
-import FloatingChat from '@/components/chat/FloatingChat.vue'
 import CollabPanel from '@/components/collab-panel/CollabPanel.vue'
 import ActiveRoomOverlay from '@/components/collab-room/ActiveRoomOverlay.vue'
 import { useRoomActions } from '@/components/collab-room/useRoomActions'
@@ -47,8 +45,6 @@ const { tab } = defineProps<{ tab: Tab }>()
 const store = tab.store
 provideTabEditorStore(store)
 const { isMobile } = useViewportKind()
-/** Whether the AI chat floats over the canvas while the panels are hidden; Toggle AI chat opens it too. */
-const floatingChat = floatingChatOpen(store)
 const interfaceScale = computed(interfaceScaleFactor)
 const workspace = useTemplateRef('workspace')
 const { width: workspaceWidth } = useElementSize(() => {
@@ -206,11 +202,8 @@ const { pending: roomPending } = useRoomActions()
             mode="collapsed"
             :document-name="store.state.documentName"
             :shortcut="formatShortcut(appMenuShortcut('toggle-ui')) ?? ''"
-            :chat-open="floatingChat"
             @show-ui="store.state.showUI = true"
-            @toggle-chat="floatingChat = !floatingChat"
           />
-          <FloatingChat v-if="!canvasAlone && floatingChat" @close="floatingChat = false" />
         </template>
       </div>
     </SplitterPanel>

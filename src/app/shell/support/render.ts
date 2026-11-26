@@ -1,5 +1,7 @@
 import { IS_TAURI } from '@open-pencil/core/constants'
 
+import { publicAssetPath } from '@/app/shell/base-path'
+
 import type { SupportNotice } from './guidance'
 
 /**
@@ -40,7 +42,7 @@ export function renderSupportNotice(notice: SupportNotice, doc: Document = docum
   container.setAttribute('role', 'alert')
 
   const icon = doc.createElement('img')
-  icon.src = '/brand/app-icon.svg'
+  icon.src = publicAssetPath('brand/app-icon.svg')
   icon.alt = ''
   icon.width = 40
   icon.height = 40

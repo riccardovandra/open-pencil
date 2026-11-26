@@ -28,6 +28,8 @@ import { openPendingFiles } from '@/app/document/io/pending-open'
 import { openWebLinkFromLocation, withoutWebLinkParams } from '@/app/document/io/web-link'
 import { setActiveEditorStore } from '@/app/editor/active-store'
 import { focusNodesByName } from '@/app/editor/selection/focus'
+import { startUpDocsHost } from '@/app/host/up-docs/bridge'
+import { isUpDocsHost } from '@/app/host/up-docs/channel'
 import { notificationMessages } from '@/app/i18n/notifications'
 import { appRuntimeConfig } from '@/app/runtime/config'
 import { useDocumentDrop } from '@/app/shell/document-drop'
@@ -89,13 +91,15 @@ watch(
 )
 const router = useRouter()
 const createdInitialTab = tabCount() === 0
+// UP Docs: the host page owns the document; no Home, welcome, prompts or campaigns.
+const upDocsHost = isUpDocsHost()
 // Home is pinned first everywhere but tests and the demo, and opens in front, as Figma's does:
 // it is where a design or a board is started, with or without recent files to list.
-const pinHome = !appRuntimeConfig.test && !route.meta.demo
+const pinHome = !appRuntimeConfig.test && !route.meta.demo && !upDocsHost
 const showHomeFirst = route.path === '/' && pinHome
 // The view stays mounted from /demo to /, so Home is pinned once a route that has it is reached.
 watch(
-  () => !appRuntimeConfig.test && !route.meta.demo,
+  () => !appRuntimeConfig.test && !route.meta.demo && !upDocsHost,
   (pins) => {
     if (pins) ensureHomeTab()
   }
@@ -144,13 +148,17 @@ function openFirstTab(): Tab {
 
 // A first visit to the demo link is a first run too; the welcome there skips the tour offer.
 const welcomeShown =
-  createdInitialTab && (route.path === '/' || route.meta.demo) && !appRuntimeConfig.test
+  createdInitialTab &&
+  (route.path === '/' || route.meta.demo) &&
+  !appRuntimeConfig.test &&
+  !upDocsHost
     ? offerAISetupOnFirstRun({ inTour: route.meta.demo === true })
     : false
-const sharingStarted = startSharing()
+// An embedded editor sends nothing of its own; builds without the feedback flag send nothing anyway.
+const sharingStarted = upDocsHost ? Promise.resolve() : startSharing()
 // Release builds show campaigns, such as the donation ask; development and test runs would only
 // be interrupted.
-const showsCampaigns = import.meta.env.PROD && !appRuntimeConfig.test
+const showsCampaigns = import.meta.env.PROD && !appRuntimeConfig.test && !upDocsHost
 // One question per launch: a first run is asked about usage stats once the welcome closes, and
 // a later launch about usage stats if still unanswered, otherwise shows a campaign that is due.
 if (welcomeShown) {
@@ -169,6 +177,7 @@ if (welcomeShown) {
     () => !openingCloudLink.value,
     async () => {
       await sharingStarted
+      if (upDocsHost) return
       offerUsageStatsPrompt('prompt')
       if (showsCampaigns && !usageStatsPrompt.value) void offerCampaignPrompt()
     },
@@ -260,8 +269,14 @@ async function bindAssociatedFileOpen(): Promise<void> {
 }
 
 let stopWebMCP: (() => void) | undefined
+let stopUpDocsHost: (() => void) | undefined
 
 onMounted(async () => {
+  // The UP Docs page opens and saves the document; nothing else does here.
+  if (upDocsHost) {
+    stopUpDocsHost = startUpDocsHost(getActiveStore)
+    return
+  }
   stopWebMCP = startWebMCP(getActiveStore)
   await startMCPRuntime(getActiveStore)
 
@@ -294,6 +309,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  stopUpDocsHost?.()
   stopWebMCP?.()
   void stopMCPRuntime()
   fileAssociationCleanup.value?.()
@@ -312,7 +328,8 @@ onUnmounted(() => {
     <CloudCommunityBanner />
     <RenameSelectionDialog />
     <CommandPalette />
-    <TabBar />
+    <!-- Inside UP Docs the page is one design: no tabs, New file, or Close. -->
+    <TabBar v-if="!upDocsHost" />
     <HomeWorkspace
       v-show="activeTab && activeTab.kind !== 'document'"
       @new-document="createDocumentTab"

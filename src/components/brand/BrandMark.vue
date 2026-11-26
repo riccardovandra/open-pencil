@@ -2,6 +2,7 @@
 import { tv } from 'tailwind-variants'
 import { computed } from 'vue'
 
+import { publicAssetPath } from '@/app/shell/base-path'
 import brandMarkTheme from '@/theme/brand'
 
 import type { BrandMarkProps } from './types'
@@ -24,7 +25,7 @@ const sources = {
 const source = computed(() => {
   // The ivory tile owns its background and always uses the light palette.
   const suffix = variant !== 'app-icon' && appearance === 'dark' ? '-dark' : ''
-  return `/brand/${sources[variant]}${suffix}.svg`
+  return publicAssetPath(`brand/${sources[variant]}${suffix}.svg`)
 })
 </script>
 

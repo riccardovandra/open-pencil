@@ -1,5 +1,3 @@
-import { useViewportKind } from '@open-pencil/vue/editor/viewport-kind'
-
 import { useEditorStore } from '@/app/editor/active-store'
 import { createKeyboardActions } from '@/app/shell/keyboard/actions'
 import { bindEditorClipboard } from '@/app/shell/keyboard/clipboard'
@@ -15,8 +13,7 @@ import {
 
 export function useKeyboard() {
   const store = useEditorStore()
-  const { isMobile } = useViewportKind()
-  const actions = createKeyboardActions({ store, isMobile })
+  const actions = createKeyboardActions({ store })
 
   bindEditorClipboard(store)
 

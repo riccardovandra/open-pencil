@@ -4,7 +4,6 @@ import type { EditorStore } from '@/app/editor/active-store'
 export type KeyboardShortcutActions = {
   toggleUI: () => void
   togglePlay: () => void
-  toggleAI: () => void
   exportSelectionPNG: () => void
 }
 

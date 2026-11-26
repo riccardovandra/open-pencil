@@ -18,7 +18,6 @@ import IconZoomOut from '~icons/lucide/zoom-out'
 import type { BuiltinIOFormatId } from '@open-pencil/core/io'
 import { formatShortcutKeys, useEditorCommands } from '@open-pencil/vue/editor/commands'
 import type { MenuEntry } from '@open-pencil/vue/editor/menu-model'
-import { useViewportKind } from '@open-pencil/vue/editor/viewport-kind'
 import { useMessages, useLocale } from '@open-pencil/vue/i18n'
 import type {
   CommandPaletteGroup,
@@ -27,6 +26,8 @@ import type {
 
 import { createPlaceMenuActions } from '@/app/document/io/place'
 import { useEditorStore } from '@/app/editor/active-store'
+import { isUpDocsHost } from '@/app/host/up-docs/channel'
+import { hidesUpDocsMenuItem } from '@/app/host/up-docs/interface'
 import { openSettingsDialog } from '@/app/settings/dialog'
 import {
   setCommentsOnCanvas,
@@ -75,7 +76,8 @@ const APP_MENU_ICONS: Record<AppMenuIcon, Component> = {
   'zoom-out': IconZoomOut
 }
 
-function isVisible(entry: { target?: string; feature?: AppMenuFeature }): boolean {
+function isVisible(entry: { id?: string; target?: string; feature?: AppMenuFeature }): boolean {
+  if (entry.id !== undefined && isUpDocsHost() && hidesUpDocsMenuItem(entry.id)) return false
   return entry.target !== 'native' && menuFeatureAvailable(entry.feature)
 }
 
@@ -95,7 +97,6 @@ export function useAppMenu() {
   const updates = useMessages('updates')
   const { locale, availableLocales, localeLabels, setLocale } = useLocale()
   const { theme, setTheme } = useAppTheme()
-  const { isMobile } = useViewportKind()
 
   const translatedMenuItemLabels: Partial<Record<string, keyof typeof menu.value>> = {
     new: 'new',
@@ -150,7 +151,6 @@ export function useAppMenu() {
     profiler: 'profiler',
     'toggle-ui': 'toggleUI',
     'toggle-preview': 'togglePreview',
-    'toggle-ai': 'toggleAIChat',
     theme: 'theme',
     'theme-light': 'themeLight',
     'theme-dark': 'themeDark',
@@ -197,7 +197,7 @@ export function useAppMenu() {
     'export-pptx': () => exportSelection('pptx'),
     'export-drawio': () => exportSelection('drawio'),
     'export-fig': () => exportSelection('fig'),
-    ...createSharedEditorMenuActions(setTheme, isMobile)
+    ...createSharedEditorMenuActions(setTheme)
   }
 
   function itemAction(item: AppMenuActionItem): (() => void) | undefined {

@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import { homeLocation } from '@/app/home/location'
+import { APP_BASE_PATH } from '@/app/shell/base-path'
 
 /**
  * The editor and its workspace load with the first address that needs them, so a page that is
@@ -12,7 +13,7 @@ const WorkspaceView = () => import('./views/editor').then((views) => views.Works
 const EmbedView = () => import('./views/embed/EmbedView.vue')
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(APP_BASE_PATH),
   routes: [
     // A Cloud document inside another site's page, read-only, without the editor around it. A
     // build without Cloud has none, and bundles none of the embed.

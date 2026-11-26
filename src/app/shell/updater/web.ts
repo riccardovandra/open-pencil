@@ -5,6 +5,7 @@ import { messageStores } from '@open-pencil/vue/i18n'
 import { useOpenOverlays } from '@open-pencil/vue/lifecycle/overlays'
 
 import { confirmAppExit } from '@/app/document/close/exit'
+import { isUpDocsHost } from '@/app/host/up-docs/channel'
 import { toast } from '@/app/shell/ui'
 import { allTabs } from '@/app/tabs'
 import { IS_TAURI } from '@/constants'
@@ -160,6 +161,8 @@ export function takeWebUpdate(update: WaitingUpdate): void {
 export function useWebUpdates(): void {
   // Plain HTTP away from localhost has no service workers, as some browsers do not.
   if (IS_TAURI || !('serviceWorker' in navigator)) return
+  // UP Docs serves the editor itself, with HTTP caching; no service worker.
+  if (isUpDocsHost()) return
   const overlays = useOpenOverlays()
   // A first visit's worker taking control of the page is no new version.
   const controlledAtStart = navigator.serviceWorker.controller !== null

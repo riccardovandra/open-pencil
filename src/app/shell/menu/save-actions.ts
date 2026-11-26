@@ -3,6 +3,7 @@ import { isCanvasTextInput } from '@open-pencil/vue/canvas/text-edit'
 import { openVersionDialog, openVersionHistory, saveDocument } from '@/app/cloud/integration'
 import { saveWithFeedback } from '@/app/document/io/save/feedback'
 import { getActiveEditorStore, type EditorStore } from '@/app/editor/active-store'
+import { isUpDocsHost, requestUpDocsSave } from '@/app/host/up-docs/channel'
 import { openSaveTo } from '@/app/storage/save-to/session'
 import { getTabForStore, showsDocument } from '@/app/tabs'
 
@@ -37,6 +38,8 @@ function onDocument(run: (store: EditorStore) => void): () => void {
 export function createSaveMenuActions() {
   return {
     save: onDocument((store) => {
+      // Inside UP Docs, Save stores the document in the page around the editor.
+      if (isUpDocsHost()) return requestUpDocsSave()
       void saveWithFeedback(() => saveDocument(store), {
         key: store,
         isOpen: () => getTabForStore(store) !== undefined,

@@ -140,13 +140,6 @@ export const VIEW_MENU: AppMenuGroupSchema = {
     },
     { type: 'separator' },
     { id: 'toggle-ui', feature: 'document', label: 'Toggle UI', shortcut: 'Mod+\\' },
-    {
-      id: 'toggle-ai',
-      feature: 'document',
-      label: 'Toggle AI Chat',
-      shortcut: 'Mod+J',
-      palette: { keywords: ['assistant', 'agent', 'chat', 'prompt'] }
-    },
     { id: 'toggle-preview', feature: 'document', label: 'Preview', shortcut: 'Mod+Alt+Enter' },
     { type: 'separator' },
     { id: 'profiler', label: 'Profiler', checkbox: true, target: 'browser' },

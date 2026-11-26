@@ -6,6 +6,7 @@ import { placeFiles } from '@/app/document/io/place'
 import { getActiveEditorStoreOrNull } from '@/app/editor/active-store'
 import { isDesignTokenFileName } from '@/app/editor/tokens/design-tokens'
 import { importTokenFiles } from '@/app/editor/tokens/dialog'
+import { isUpDocsHost } from '@/app/host/up-docs/channel'
 import { isDOMDocumentFile, openDesignFile, openDesignFileBatch } from '@/app/shell/menu/files'
 
 interface DroppedFile {
@@ -95,7 +96,8 @@ export function useDocumentDrop() {
     const documents = dropped.filter(
       (entry) => (!store || !tokens.includes(entry)) && !pages.includes(entry)
     )
-    if (documents.length === 0) return
+    // Inside UP Docs the page opens the one document; dropped files only join it.
+    if (documents.length === 0 || isUpDocsHost()) return
     void openDesignFileBatch(
       documents,
       ({ file }) => file.name,
