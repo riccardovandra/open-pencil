@@ -72,6 +72,11 @@ async function builtHash(): Promise<string | null> {
   }
 }
 
+// UP Docs P0: a machine without the wasm32 Rust target skips the HTML engine (HTML import only).
+if (process.env.OPENPENCIL_SKIP_HTML_ENGINE_WASM === '1') {
+  console.warn('Skipping html-engine.wasm (OPENPENCIL_SKIP_HTML_ENGINE_WASM=1)')
+  process.exit(0)
+}
 const root = workspaceRoot()
 const hash = await sourcesHash(root)
 if ((await builtHash()) === hash) {
