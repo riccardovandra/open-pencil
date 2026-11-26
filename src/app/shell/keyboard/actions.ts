@@ -1,6 +1,5 @@
 import type { useViewportKind } from '@open-pencil/vue/editor/viewport-kind'
 
-import { toggleChatPanel } from '@/app/ai/chat/panel'
 import type { EditorStore } from '@/app/editor/active-store'
 
 type KeyboardActionsOptions = {
@@ -19,7 +18,8 @@ export function createKeyboardActions({ store, isMobile }: KeyboardActionsOption
   }
 
   function toggleAI() {
-    toggleChatPanel(store, isMobile.value)
+    // UP Docs: no in-tool chat.
+    void isMobile
   }
 
   function exportSelectionPNG() {

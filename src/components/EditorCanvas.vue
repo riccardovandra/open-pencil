@@ -30,7 +30,7 @@ import { useTextEdit } from '@open-pencil/vue/canvas/text-edit'
 import { toolCursor } from '@open-pencil/vue/editor/tool-cursor'
 import { autoLayoutValueAnchor, type AutoLayoutValueField } from '@open-pencil/vue/shared/input'
 
-import { useAIChat } from '@/app/ai/chat/use'
+import { propertiesTab } from '@/app/ai/chat/panel'
 import { useEditorStore } from '@/app/editor/active-store'
 import { useCanvasCollaborationAwareness } from '@/app/editor/canvas/collaboration-awareness'
 import { createCanvasContextSelection } from '@/app/editor/canvas/context-selection'
@@ -187,7 +187,6 @@ watch(isActivePane, (active) => {
 })
 onUnmounted(cleanupInteractions)
 
-const { activeTab: propertiesTab } = useAIChat()
 const openStatusLabel = shallowRef<PlacedStatusLabel | null>(null)
 const { cursor: statusLabelCursor } = useCanvasStatusLabels(canvasRef, store, {
   hitTest: hitTestStatusLabel,

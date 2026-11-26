@@ -2,7 +2,6 @@ import type { Ref } from 'vue'
 
 import type { SceneNode } from '@open-pencil/scene-graph'
 
-import { toggleChatPanel } from '@/app/ai/chat/panel'
 import { useEditorStore } from '@/app/editor/active-store'
 import {
   copySelectionProperties,
@@ -97,7 +96,8 @@ export function createSharedEditorMenuActions(
       store.state.showUI = !store.state.showUI
     },
     'toggle-preview': () => store.togglePlay(),
-    'toggle-ai': () => toggleChatPanel(store, isMobile.value),
+    // UP Docs: no in-tool chat.
+    'toggle-ai': () => undefined,
     'insert-icon': () => {
       store.state.iconPickerOpen = true
     },

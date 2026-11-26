@@ -19,7 +19,6 @@ import { appMenuShortcut } from '@/app/shell/menu/shortcut'
 import { remToPx } from '@/app/shell/root-font-size'
 import type { Tab } from '@/app/tabs'
 import CanvasSplitRoot from '@/components/canvas/CanvasSplitRoot.vue'
-import FloatingChat from '@/components/chat/FloatingChat.vue'
 import CollabPanel from '@/components/collab-panel/CollabPanel.vue'
 import ActiveRoomOverlay from '@/components/collab-room/ActiveRoomOverlay.vue'
 import { useRoomActions } from '@/components/collab-room/useRoomActions'
@@ -210,7 +209,6 @@ const { pending: roomPending } = useRoomActions()
             @show-ui="store.state.showUI = true"
             @toggle-chat="floatingChat = !floatingChat"
           />
-          <FloatingChat v-if="!canvasAlone && floatingChat" @close="floatingChat = false" />
         </template>
       </div>
     </SplitterPanel>

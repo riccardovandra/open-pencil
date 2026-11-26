@@ -43,17 +43,8 @@ const editor = useMessages('editor')
     >
       <icon-lucide-sidebar class="size-3.5" />
     </IconButton>
-    <IconButton
-      v-if="mode === 'collapsed'"
-      toggle
-      :active="chatOpen"
-      :label="chatOpen ? editor.closeChat : editor.openChat"
-      data-test-id="editor-toggle-chat"
-      @click="emit('toggleChat')"
-    >
-      <icon-lucide-sparkles class="size-3.5" />
-    </IconButton>
-    <template v-else>
+    <!-- UP Docs: no in-tool chat button. -->
+    <template v-if="mode !== 'collapsed'">
       <span
         class="ms-1 flex h-5 items-center gap-1 rounded bg-accent/15 px-1.5 text-3xs font-medium text-primary"
       >

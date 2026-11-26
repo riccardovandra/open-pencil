@@ -6,11 +6,10 @@ import { computed, watchEffect } from 'vue'
 import { resolveEditorProfile } from '@open-pencil/core'
 import { useMessages } from '@open-pencil/vue/i18n'
 
-import { useAIChat } from '@/app/ai/chat/use'
+import { propertiesTab as activeTab } from '@/app/ai/chat/panel'
 import { isVersionHistoryOpen } from '@/app/cloud/integration'
 import { useEditorStore } from '@/app/editor/active-store'
 import { countIssues } from '@/app/editor/design-check/issues'
-import ChatPanel from '@/components/chat/ChatPanel.vue'
 import { CloudVersionHistory } from '@/components/cloud/integration'
 import propertiesTabsTheme from '@/theme/panel/properties-tabs'
 
@@ -22,7 +21,6 @@ import ZoomDropdown from './editor/ZoomDropdown.vue'
 
 const propertiesTabs = tv(propertiesTabsTheme)
 
-const { activeTab } = useAIChat()
 const panels = useMessages('panels')
 const checkMessages = useMessages('design-check')
 const store = useEditorStore()
@@ -74,10 +72,6 @@ const problemCount = computed(() => {
           <icon-lucide-code :class="tabStyles.icon()" aria-hidden="true" />
           <span :class="tabStyles.label()">{{ panels.code }}</span>
         </TabsTrigger>
-        <TabsTrigger value="ai" data-test-id="properties-tab-ai" :class="tabStyles.trigger()">
-          <icon-lucide-sparkles :class="tabStyles.icon()" aria-hidden="true" />
-          <span :class="tabStyles.label()">{{ panels.ai }}</span>
-        </TabsTrigger>
         <TabsTrigger
           v-if="lints"
           value="lint"
@@ -125,15 +119,6 @@ const problemCount = computed(() => {
         :hidden="activeTab !== 'lint'"
       >
         <DesignCheckPanel :active="activeTab === 'lint'" />
-      </TabsContent>
-
-      <TabsContent
-        value="ai"
-        class="flex min-h-0 flex-1 flex-col"
-        :force-mount="true"
-        :hidden="activeTab !== 'ai'"
-      >
-        <ChatPanel />
       </TabsContent>
     </TabsRoot>
   </aside>
