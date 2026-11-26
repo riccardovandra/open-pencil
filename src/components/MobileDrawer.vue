@@ -9,7 +9,6 @@ import { useMessages } from '@open-pencil/vue/i18n'
 
 import { useEditorStore } from '@/app/editor/active-store'
 import { useMotionTransition } from '@/app/shell/motion/transitions'
-import ChatPanel from '@/components/chat/ChatPanel.vue'
 import {
   DRAWER_SPRING_DAMPING,
   DRAWER_SPRING_STIFFNESS,
@@ -167,15 +166,6 @@ const drawerTransition = useMotionTransition({
           >
             <icon-lucide-code class="size-4" />
           </TabsTrigger>
-
-          <TabsTrigger
-            data-test-id="mobile-ribbon-ai"
-            value="ai"
-            class="flex h-full cursor-pointer items-center justify-center px-3 transition-colors outline-none select-none data-[state=active]:text-primary"
-            @click="toggleTab('ai')"
-          >
-            <icon-lucide-sparkles class="size-4" />
-          </TabsTrigger>
         </TabsList>
       </nav>
 
@@ -202,12 +192,6 @@ const drawerTransition = useMotionTransition({
         <TabsContent value="code" class="mt-0 h-full data-[state=inactive]:hidden">
           <div data-test-id="mobile-drawer-code" class="flex h-full flex-col">
             <CodePanel :active="isOpen && getDrawerTab() === 'code'" />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="ai" class="mt-0 h-full data-[state=inactive]:hidden">
-          <div data-test-id="mobile-drawer-ai" class="flex h-full flex-col">
-            <ChatPanel />
           </div>
         </TabsContent>
       </div>

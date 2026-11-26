@@ -8,7 +8,7 @@ const noop = () => undefined
 function shortcuts() {
   return appShortcuts({
     store: createEditorStore(),
-    actions: { toggleUI: noop, togglePlay: noop, toggleAI: noop, exportSelectionPNG: noop },
+    actions: { toggleUI: noop, togglePlay: noop, exportSelectionPNG: noop },
     openFileDialog: noop,
     closeActiveTab: noop,
     createTab: noop,

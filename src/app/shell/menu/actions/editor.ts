@@ -1,8 +1,5 @@
-import type { Ref } from 'vue'
-
 import type { SceneNode } from '@open-pencil/scene-graph'
 
-import { toggleChatPanel } from '@/app/ai/chat/panel'
 import { useEditorStore } from '@/app/editor/active-store'
 import {
   copySelectionProperties,
@@ -62,8 +59,7 @@ export function toggleSelectedTextUnderline(): void {
 }
 
 export function createSharedEditorMenuActions(
-  setTheme: (theme: 'light' | 'dark' | 'auto') => void,
-  isMobile: Ref<boolean>
+  setTheme: (theme: 'light' | 'dark' | 'auto') => void
 ) {
   return {
     'copy-properties': onCanvasSelection(() => void copySelectionProperties(store)),
@@ -97,7 +93,6 @@ export function createSharedEditorMenuActions(
       store.state.showUI = !store.state.showUI
     },
     'toggle-preview': () => store.togglePlay(),
-    'toggle-ai': () => toggleChatPanel(store, isMobile.value),
     'insert-icon': () => {
       store.state.iconPickerOpen = true
     },

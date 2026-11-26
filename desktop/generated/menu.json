@@ -400,12 +400,6 @@
         "feature": "document"
       },
       {
-        "id": "toggle-ai",
-        "label": "Toggle AI Chat",
-        "accelerator": "CmdOrCtrl+J",
-        "feature": "document"
-      },
-      {
         "id": "toggle-preview",
         "label": "Preview",
         "accelerator": "CmdOrCtrl+Alt+Enter",

@@ -92,7 +92,6 @@ export function appShortcuts(options: KeyboardShortcutOptions): EditorShortcut[]
           store.splitPane(store.activePaneId.value, 'horizontal')
       }
     },
-    { id: 'toggle-ai', keys: menuKeys('toggle-ai'), run: actions.toggleAI },
     {
       id: 'toggle-comments',
       keys: menuKeys('view-comments'),

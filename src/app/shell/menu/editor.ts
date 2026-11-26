@@ -6,7 +6,6 @@ import {
   type EditorCommand,
   type EditorCommandId
 } from '@open-pencil/vue/editor/commands'
-import { useViewportKind } from '@open-pencil/vue/editor/viewport-kind'
 
 import { createPlaceMenuActions } from '@/app/document/io/place'
 import { useEditorStore } from '@/app/editor/active-store'
@@ -68,7 +67,6 @@ export function useEditorMenu() {
   watchNativeMenuFeatures()
 
   const { setTheme } = useAppTheme()
-  const { isMobile } = useViewportKind()
   const { commands, runCommand } = useEditorCommands()
   watchNativeMenuDisabled(commands)
 
@@ -98,7 +96,7 @@ export function useEditorMenu() {
       store.state.autosaveEnabled = !store.state.autosaveEnabled
     },
     ...createSelectionMenuActions(store),
-    ...createSharedEditorMenuActions(setTheme, isMobile)
+    ...createSharedEditorMenuActions(setTheme)
   }
 
   useNativeMenuEvents((id) => {
