@@ -43,7 +43,8 @@ html:has(#app:empty) {
   content: '';
   width: 40px;
   height: 40px;
-  background: url('/brand/app-icon.svg') center / contain no-repeat;
+  /* Relative, so a build served under any path finds it (`src/app/shell/base-path.ts`). */
+  background: url('brand/app-icon.svg') center / contain no-repeat;
 }
 #boot-splash .bar {
   position: absolute;
