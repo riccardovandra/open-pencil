@@ -22,6 +22,7 @@ import {
   createTauriDownloadedFontCache,
   downloadedFontCacheSummary as tauriDownloadedFontCacheSummary
 } from '@/app/editor/fonts/cache'
+import { isUpDocsHost } from '@/app/host/up-docs/channel'
 import { isTauri } from '@/app/tauri/env'
 import { tauriFetch } from '@/app/tauri/http'
 import { IS_BROWSER, IS_TAURI } from '@/constants'
@@ -35,6 +36,8 @@ export type FontProviderSettings = Record<WebFontProviderId, boolean>
 /** Online fonts are on until turned off in Settings. */
 export const DEFAULT_ONLINE_FONTS = true
 export const onlineFontsEnabled = useLocalStorage('op-online-fonts-enabled', DEFAULT_ONLINE_FONTS)
+/** Inside UP Docs the editor reaches only its own origin, so it asks no font service. */
+const onlineFontsAllowed = !isUpDocsHost()
 export const fontProviderSettings = useLocalStorage<FontProviderSettings>(
   'op-font-providers',
   DEFAULT_WEB_FONT_PROVIDER_SETTINGS
@@ -44,7 +47,7 @@ watch(
   [onlineFontsEnabled, fontProviderSettings],
   () => {
     fontManager.setOnlineFontProviders(
-      onlineFontsEnabled.value
+      onlineFontsEnabled.value && onlineFontsAllowed
         ? Object.fromEntries(
             WEB_FONT_PROVIDER_IDS.map((provider) => [
               provider,
@@ -100,7 +103,7 @@ export function preloadFonts(): void {
     void getTauriFonts()
     return
   }
-  if (onlineFontsEnabled.value) fontManager.preloadWebFontFamilies()
+  if (onlineFontsEnabled.value && onlineFontsAllowed) fontManager.preloadWebFontFamilies()
 }
 
 /** The event the desktop host sends once it has listed the system fonts again. */

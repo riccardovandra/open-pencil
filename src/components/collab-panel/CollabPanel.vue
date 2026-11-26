@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 import { isCloudBinding } from '@/app/cloud/integration'
 import { useEditorStore } from '@/app/editor/active-store'
+import { isUpDocsHost } from '@/app/host/up-docs/channel'
 import { CloudShareButton } from '@/components/cloud/integration'
 import CollabAvatarStack from '@/components/collab-panel/CollabAvatarStack.vue'
 import CollabSharePopover from '@/components/collab-panel/CollabSharePopover.vue'
@@ -13,6 +14,8 @@ const collab = provideCollabPanel()
 const store = useEditorStore()
 // Cloud documents share through their server; everything else through a peer-to-peer room.
 const cloud = computed(() => isCloudBinding(store.getStorageBinding()))
+// The UP Docs page around the editor owns sharing; its documents join no rooms.
+const shares = !isUpDocsHost()
 </script>
 
 <template>
@@ -21,6 +24,6 @@ const cloud = computed(() => isCloudBinding(store.getStorageBinding()))
     <VoiceCallControl v-if="collab.state.inRoom" :people="collab.callRows" />
     <div class="flex-1" />
     <CloudShareButton v-if="cloud" />
-    <CollabSharePopover v-else />
+    <CollabSharePopover v-else-if="shares" />
   </div>
 </template>

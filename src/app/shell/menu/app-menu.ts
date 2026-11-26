@@ -26,6 +26,8 @@ import type {
 
 import { createPlaceMenuActions } from '@/app/document/io/place'
 import { useEditorStore } from '@/app/editor/active-store'
+import { isUpDocsHost } from '@/app/host/up-docs/channel'
+import { hidesUpDocsMenuItem } from '@/app/host/up-docs/interface'
 import { openSettingsDialog } from '@/app/settings/dialog'
 import {
   setCommentsOnCanvas,
@@ -74,7 +76,8 @@ const APP_MENU_ICONS: Record<AppMenuIcon, Component> = {
   'zoom-out': IconZoomOut
 }
 
-function isVisible(entry: { target?: string; feature?: AppMenuFeature }): boolean {
+function isVisible(entry: { id?: string; target?: string; feature?: AppMenuFeature }): boolean {
+  if (entry.id !== undefined && isUpDocsHost() && hidesUpDocsMenuItem(entry.id)) return false
   return entry.target !== 'native' && menuFeatureAvailable(entry.feature)
 }
 

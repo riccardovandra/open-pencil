@@ -7,6 +7,8 @@ import {
   pasteClipboardProperties
 } from '@/app/editor/clipboard/properties'
 import { requestRenameSelection } from '@/app/editor/selection/rename-dialog'
+import { isUpDocsHost } from '@/app/host/up-docs/channel'
+import { refusesUpDocsShortcut } from '@/app/host/up-docs/interface'
 import { openSettingsDialog } from '@/app/settings/dialog'
 import { setSnappingPreference } from '@/app/settings/preferences/apply'
 import type { KeyboardShortcutOptions } from '@/app/shell/keyboard/types'
@@ -137,5 +139,10 @@ export function appShortcuts(options: KeyboardShortcutOptions): EditorShortcut[]
 
 /** The editor's keyboard from the SDK, with the app's own keys added. */
 export function registerKeyboardShortcuts(options: KeyboardShortcutOptions) {
-  useEditorKeyboard({ shortcuts: appShortcuts(options) })
+  const shortcuts = appShortcuts(options)
+  useEditorKeyboard({
+    shortcuts: isUpDocsHost()
+      ? shortcuts.filter((shortcut) => !refusesUpDocsShortcut(shortcut.id))
+      : shortcuts
+  })
 }

@@ -4,6 +4,7 @@ import { AUTOMATION_HTTP_PORT } from '@open-pencil/core/constants'
 import { parseToolDescriptor, type ToolDescriptor } from '@open-pencil/mcp/tools'
 import { DEADLINE_MS } from '@open-pencil/std/timing'
 
+import { isUpDocsHost } from '@/app/host/up-docs/channel'
 import { APP_VERSION } from '@/app/runtime/version'
 
 import {
@@ -111,6 +112,8 @@ function parseAutomationHealth(value: unknown): AutomationHealth | null {
 export async function probeAutomationHealth(
   authToken: string | null
 ): Promise<AutomationHealth | null> {
+  // Inside UP Docs the agent reaches the editor through the page's bridge, never a local server.
+  if (isUpDocsHost()) return null
   try {
     const headers = authToken ? { Authorization: `Bearer ${authToken}` } : undefined
     const res = await fetch(`${AUTOMATION_HTTP_URL}/health`, {
