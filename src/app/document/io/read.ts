@@ -33,7 +33,12 @@ export function createOpenActions({
   fitCurrentPageToViewport,
   preparationController
 }: OpenFileOptions) {
-  async function openFigFile(file: File, handle?: FileSystemFileHandle, path?: string) {
+  /** Opens `file` in place of the document; false when it could not be read, which leaves it. */
+  async function openFigFile(
+    file: File,
+    handle?: FileSystemFileHandle,
+    path?: string
+  ): Promise<boolean> {
     const load = preparationController.begin({ kind: 'document-open', subject: file.name })
     let succeeded = false
     try {
@@ -61,7 +66,7 @@ export function createOpenActions({
         })
       succeeded = true
     } catch (e) {
-      if (load.signal.aborted) return
+      if (load.signal.aborted) return false
       const diagnostic = describeDiagnosticError(e)
       load.fail({
         code: 'decode-failed',
@@ -85,6 +90,7 @@ export function createOpenActions({
     } finally {
       if (succeeded) load.complete()
     }
+    return succeeded
   }
 
   return { openFigFile }

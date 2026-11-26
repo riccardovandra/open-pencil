@@ -4,6 +4,7 @@
  * `?host=up-docs&parent=<origin>`, before anything rewrites the address. It imports nothing of the
  * app, so the support gate in `src/main.ts` can report a failed start without loading it.
  */
+import { IS_BROWSER } from '@open-pencil/core/constants'
 import { errorMessage } from '@open-pencil/std/errors'
 
 /** The protocol version the editor speaks, sent with `up-designer:ready`. */
@@ -41,10 +42,8 @@ export function parseUpDocsHost(search: string, framed: boolean): UpDocsHost | n
   return { parentOrigin: framed ? parseParentOrigin(params.get('parent')) : null }
 }
 
-const inBrowser = typeof window !== 'undefined'
-
 /** The UP Docs page around the editor, or null when the editor runs on its own. */
-export const upDocsHost: UpDocsHost | null = inBrowser
+export const upDocsHost: UpDocsHost | null = IS_BROWSER
   ? parseUpDocsHost(window.location.search, window.parent !== window)
   : null
 
@@ -73,4 +72,16 @@ export function postToUpDocsHost(
 /** Tells the UP Docs page what went wrong, so it can say so instead of showing a blank frame. */
 export function postUpDocsError(reason: UpDocsErrorReason, error: unknown): boolean {
   return postToUpDocsHost({ type: 'up-designer:error', reason, message: errorMessage(error) })
+}
+
+/** The running bridge's save (`./bridge.ts`), kept here so Save reaches it without importing it. */
+let hostSave: (() => void) | undefined
+
+export function setUpDocsSave(save: (() => void) | undefined): void {
+  hostSave = save
+}
+
+/** Saves to the UP Docs page now, as its `save-now` does; Save in the menu or with its key. */
+export function requestUpDocsSave(): void {
+  hostSave?.()
 }

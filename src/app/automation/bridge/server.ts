@@ -61,7 +61,9 @@ export function automationFiles(automationURL: string, token: string): Automatio
 export function connectAutomation(
   getStore: () => EditorStore,
   authToken: string | null = null,
-  automationURL = __OPENPENCIL_LOCAL_AUTOMATION_URL__
+  automationURL = __OPENPENCIL_LOCAL_AUTOMATION_URL__,
+  /** Why a call is refused before it runs, or null to run it, as an embedding host decides. */
+  refuse: (command: string, args: unknown) => string | null = () => null
 ) {
   const token = authToken ?? randomHex(32)
   let ws: WebSocket | null = null
@@ -78,6 +80,8 @@ export function connectAutomation(
    * one once it stops waiting, and a closed connection cancels its own: no one waits for them.
    */
   const running = new Map<string, { controller: AbortController; socket: WebSocket }>()
+  /** The work of every call accepted and not yet settled, for `whenIdle`. */
+  const accepted = new Set<Promise<unknown>>()
 
   function connect() {
     let socket: WebSocket
@@ -125,12 +129,16 @@ export function connectAutomation(
         const call = { controller, socket }
         running.set(msg.id, call)
         try {
-          const result = await handleAutomationRequest(
-            getStore(),
-            msg.command,
-            msg.args,
-            controller.signal
-          )
+          const refusal = refuse(msg.command, msg.args)
+          if (refusal) throw new Error(refusal)
+          const work = handleAutomationRequest(getStore(), msg.command, msg.args, controller.signal)
+          accepted.add(work)
+          let result: unknown
+          try {
+            result = await work
+          } finally {
+            accepted.delete(work)
+          }
           if (socket.readyState !== WebSocket.OPEN) return
           socket.send(JSON.stringify({ type: 'response', id: msg.id, ...(result as object) }))
         } catch (e) {
@@ -188,6 +196,11 @@ export function connectAutomation(
     ws = null
   }
 
+  /** Settles once every call accepted so far has finished, as an embedding host needs first. */
+  async function whenIdle(): Promise<void> {
+    while (accepted.size > 0) await Promise.allSettled(accepted)
+  }
+
   connect()
-  return { disconnect, token }
+  return { disconnect, token, whenIdle }
 }

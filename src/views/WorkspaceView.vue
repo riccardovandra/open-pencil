@@ -28,6 +28,7 @@ import { openPendingFiles } from '@/app/document/io/pending-open'
 import { openWebLinkFromLocation, withoutWebLinkParams } from '@/app/document/io/web-link'
 import { setActiveEditorStore } from '@/app/editor/active-store'
 import { focusNodesByName } from '@/app/editor/selection/focus'
+import { startUpDocsHost } from '@/app/host/up-docs/bridge'
 import { isUpDocsHost } from '@/app/host/up-docs/channel'
 import { notificationMessages } from '@/app/i18n/notifications'
 import { appRuntimeConfig } from '@/app/runtime/config'
@@ -268,10 +269,14 @@ async function bindAssociatedFileOpen(): Promise<void> {
 }
 
 let stopWebMCP: (() => void) | undefined
+let stopUpDocsHost: (() => void) | undefined
 
 onMounted(async () => {
   // The UP Docs page opens and saves the document; nothing else does here.
-  if (upDocsHost) return
+  if (upDocsHost) {
+    stopUpDocsHost = startUpDocsHost(getActiveStore)
+    return
+  }
   stopWebMCP = startWebMCP(getActiveStore)
   await startMCPRuntime(getActiveStore)
 
@@ -304,6 +309,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  stopUpDocsHost?.()
   stopWebMCP?.()
   void stopMCPRuntime()
   fileAssociationCleanup.value?.()
