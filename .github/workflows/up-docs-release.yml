@@ -1,0 +1,136 @@
+# The fork's only workflow: builds the editor as UP Docs embeds it (tools/up-docs/release.sh),
+# runs the tests of what the fork changes, and publishes a GitHub Release with the archive and its
+# checksum. A pull request into up-docs-main builds and tests without publishing; a tag
+# up-docs-v<n>, or a manual run naming one, publishes. No secrets beyond the workflow's own token.
+name: UP Docs release
+
+on:
+  push:
+    tags: ['up-docs-v*']
+  pull_request:
+    branches: [up-docs-main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release to publish, such as up-docs-v2; the tag is made at this commit if it is new.
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: up-docs-release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Name the release
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          case "$EVENT" in
+            push) version="$REF_NAME" ;;
+            workflow_dispatch) version="$INPUT_VERSION" ;;
+            *) version="up-docs-pr-$PR_NUMBER" ;;
+          esac
+          if [ "$EVENT" != pull_request ] && ! printf '%s' "$version" | grep -Eq '^up-docs-v[0-9]+$'; then
+            echo "A release is named up-docs-v<n>, not '$version'" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.4
+          no-cache: true
+
+      # The HTML engine (HTML import) compiles Rust to WebAssembly with the toolchain the
+      # repository pins; the runner's rustup installs it with the wasm32 target.
+      - name: Install the pinned Rust toolchain
+        run: |
+          channel=$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal --target wasm32-unknown-unknown
+          rustc --version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build and pack
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: tools/up-docs/release.sh "$VERSION" release
+
+      - name: Check the archive
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cd release
+          sha256sum -c "designer-$VERSION.tar.gz.sha256"
+          tar -tzf "designer-$VERSION.tar.gz" > files.txt
+          for file in index.html up-docs-tools.json up-docs-release.json; do
+            grep -qx "$file" files.txt || { echo "missing $file" >&2; exit 1; }
+          done
+          rm files.txt
+
+      # Test fixtures are Git LFS files; only the ones these tests read are fetched.
+      - name: Fetch the test fixtures
+        run: git lfs install --local && git lfs pull --include="tests/fixtures/slots.fig,tests/fixtures/fonts/*"
+
+      - name: Test what the fork changes
+        run: bun test tests/app/host tests/app/shell tests/app/automation tests/app/runtime
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: designer-${{ steps.version.outputs.version }}
+          path: release/
+          retention-days: 14
+
+  publish:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: designer-${{ needs.build.outputs.version }}
+          path: release
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+          SHA: ${{ github.sha }}
+        run: |
+          cd release
+          sha256sum -c "designer-$VERSION.tar.gz.sha256"
+          # An existing tag must name the commit this archive was built from.
+          # A failed lookup stops the job (bash -e) rather than publishing blind.
+          refs=$(gh api "repos/$GH_REPO/git/matching-refs/tags/$VERSION" \
+            --jq "map(select(.ref == \"refs/tags/$VERSION\")) | length")
+          if [ "$refs" != 0 ]; then
+            tagged=$(gh api "repos/$GH_REPO/commits/$VERSION" --jq .sha)
+            [ "$tagged" = "$SHA" ] || { echo "$VERSION points at $tagged, not $SHA" >&2; exit 1; }
+          fi
+          digest=$(cut -d' ' -f1 "designer-$VERSION.tar.gz.sha256")
+          gh release create "$VERSION" \
+            "designer-$VERSION.tar.gz" "designer-$VERSION.tar.gz.sha256" \
+            --target "$SHA" \
+            --title "$VERSION" \
+            --notes "Static OpenPencil editor for UP Docs, built from $SHA. sha256: $digest"
