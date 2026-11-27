@@ -1,0 +1,1 @@
+- Saving after deleting a main component keeps the layers its instances showed, as frames, instead of saving those instances empty; a detached instance is saved with its layers too.

@@ -1,5 +1,5 @@
 import type { SceneGraph } from '../graph'
-import { instanceMainComponent } from '../instances/main-component'
+import { instanceMainComponent, lostMainComponent } from '../instances/main-component'
 import type { SceneNode } from '../types'
 
 /** The slot property a frame holds the content of, if it is a slot. */
@@ -11,6 +11,7 @@ export function slotPropertyId(node: SceneNode): string | undefined {
 /**
  * Whether this slot frame's children belong to its instance rather than its component: the
  * nearest enclosing instance assigns the slot. Such content is never synced from the component.
+ * An instance whose main component was deleted has no slot to assign; its layers are its own.
  */
 export function ownsSlotContent(
   graph: SceneGraph,
@@ -21,7 +22,11 @@ export function ownsSlotContent(
   let owner = node.parentId ? graph.nodes.get(node.parentId) : undefined
   while (owner && owner.type !== 'INSTANCE')
     owner = owner.parentId ? graph.nodes.get(owner.parentId) : undefined
-  return !!owner && Object.hasOwn(owner.componentPropertyAssignments, propertyId)
+  return (
+    !!owner &&
+    !lostMainComponent(graph, owner) &&
+    Object.hasOwn(owner.componentPropertyAssignments, propertyId)
+  )
 }
 
 /** The name of a slot property as the instance's component (or the component's set) defines it. */

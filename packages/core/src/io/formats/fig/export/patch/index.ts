@@ -15,6 +15,7 @@ import { guidToString, stringToGuid } from '@open-pencil/kiwi/fig/guid'
 import type { SceneGraph, SceneNode } from '@open-pencil/scene-graph'
 import { DECK_TYPES, isGeneratedFrame } from '@open-pencil/scene-graph/generated'
 import { computeImageHash } from '@open-pencil/scene-graph/images'
+import { lostMainComponent } from '@open-pencil/scene-graph/instances'
 import { siblingOrderKeys } from '@open-pencil/scene-graph/order-keys'
 import type { GUID } from '@open-pencil/scene-graph/primitives'
 import { slideRows, slideSettings } from '@open-pencil/scene-graph/slides'
@@ -57,7 +58,8 @@ import { narrowToChangedFields, type RecordWriter } from './fields'
 /**
  * The layer whose record holds a layer: itself, or the outermost instance or generated frame it
  * sits in, since both write their contents as overrides and derived data on their own record.
- * An instance's slot content is records of its own, below the content frame the slot frame shows.
+ * An instance's slot content is records of its own, below the content frame the slot frame shows,
+ * and so are the layers of an instance whose main component was deleted.
  */
 function recordOwner(graph: SceneGraph, id: string): string | null {
   const start = graph.getNode(id)
@@ -65,7 +67,8 @@ function recordOwner(graph: SceneGraph, id: string): string | null {
   let owner: SceneNode = start
   for (let node: SceneNode | undefined = start; node;) {
     if (ownsSlotContent(graph, node)) return node === start ? start.id : owner.id
-    if (node.type === 'INSTANCE' || isGeneratedFrame(node)) owner = node
+    if ((node.type === 'INSTANCE' && !lostMainComponent(graph, node)) || isGeneratedFrame(node))
+      owner = node
     if (node.type === 'CANVAS') return owner.id
     node = node.parentId ? graph.getNode(node.parentId) : undefined
   }
@@ -245,6 +248,33 @@ function addTransitionSlides(
       if (slideSettings(slide)?.transition) add(slide.id)
 }
 
+/**
+ * The archive keeps an instance's layers only in its main component. An instance whose main
+ * component was deleted is written as a frame, and so is a detached one, so the layers they show
+ * become records of their own.
+ */
+function addReleasedInstanceLayers(
+  graph: SceneGraph,
+  changes: ArchiveChangeSummary,
+  add: (id: string) => unknown
+): void {
+  const before = archiveBaseline(graph)?.before
+  const released: string[] = []
+  for (const [componentId, instanceIds] of graph.instanceIndex)
+    if (!graph.getNode(componentId))
+      for (const id of instanceIds) {
+        const instance = graph.getNode(id)
+        if (instance && lostMainComponent(graph, instance)) released.push(id)
+      }
+  for (const id of changes.touched)
+    if (before?.get(id)?.type === 'INSTANCE' && graph.getNode(id)?.type !== 'INSTANCE')
+      released.push(id)
+  for (let id = released.pop(); id !== undefined; id = released.pop()) {
+    add(id)
+    released.push(...(graph.getNode(id)?.childIds ?? []))
+  }
+}
+
 /** Siblings keep the positions the archive saved; one that cannot moves, and so is written. */
 function siblingPositions(graph: SceneGraph, records: Set<string>): Map<string, string> {
   const orderKeys = new Map<string, string>()
@@ -300,6 +330,7 @@ function planRecords(
   }
   for (const id of changes.touched) add(id)
   addSetVariants(graph, changes, add)
+  addReleasedInstanceLayers(graph, changes, add)
   addModeChangeUsers(graph, add)
   addComponentInstances(graph, records, add)
   addTransitionSlides(graph, changes, add)
@@ -326,6 +357,9 @@ function editedComponents(
     const guid = component ? archived.byNode.get(component.id) : undefined
     if (guid) components.add(guid)
   }
+  // Instances of a deleted component on pages not loaded yet still name it; loaded, they are
+  // written as frames holding their layers.
+  for (const [guid, nodeId] of archived.byGuid) if (!graph.nodes.has(nodeId)) components.add(guid)
   return [...components]
 }
 

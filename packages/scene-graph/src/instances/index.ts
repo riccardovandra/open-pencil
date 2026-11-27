@@ -38,7 +38,7 @@ import {
 } from './sync'
 
 export { canCreateInstance, createsComponentCycle, cycleSafeParent } from './cycles'
-export { findInstanceAncestor, instanceMainComponent } from './main-component'
+export { findInstanceAncestor, instanceMainComponent, lostMainComponent } from './main-component'
 export {
   INSTANCE_FOLLOWED_FIELDS,
   INSTANCE_OVERRIDE_FIELDS,
@@ -256,11 +256,8 @@ export function detachInstance(graph: SceneGraph, instanceId: string): void {
   if (node?.type !== 'INSTANCE') return
   for (const nested of outermostNestedInstances(graph, node))
     adoptNestedOverrides(graph, node, nested)
-  if (node.componentId) {
-    graph.instanceIndex.get(node.componentId)?.delete(instanceId)
-  }
-  node.type = 'FRAME'
-  node.componentId = null
+  // An update, so whoever tracks edits sees the layer change, as undoing the detach does.
+  graph.updateNode(instanceId, { type: 'FRAME', componentId: null })
   clearInstanceOverrides(node.instanceOverrides)
 }
 

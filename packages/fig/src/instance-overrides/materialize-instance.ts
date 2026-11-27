@@ -156,6 +156,11 @@ export function materializeInstance(
   options: MaterializeInstanceOptions = {}
 ): MaterializedInstance {
   const { blobs = [], sourceChildren = new Map(), existingNodes = new Map(), recordId } = options
+  // A layer of a component deleted since the file opened is no source any more.
+  const sourceChildOf = (current: InstanceOccurrence): string | undefined => {
+    const id = sourceChildren.get(current)
+    return id && graph.getNode(id) ? id : undefined
+  }
   if (!graph.getNode(parentId)) throw new Error('Missing materialization parent')
   const prepared = new Map<InstanceOccurrence, ReturnType<typeof nodeChangeToProps>>()
   const validate = (current: InstanceOccurrence): void => {
@@ -174,13 +179,15 @@ export function materializeInstance(
       throw new Error(`Invalid preallocated occurrence ${current.sourceId}`)
     }
     prepared.set(current, converted)
-    const sourceChildId = sourceChildren.get(current)
+    const sourceChildId = sourceChildOf(current)
     if (sourceChildId && graph.getNode(sourceChildId)?.type !== converted.nodeType) {
       throw new Error(`Invalid source child for ${current.sourceId}`)
     }
     if (current.mainComponentId !== null) {
       const id = components.get(current.mainComponentId)
-      if (!id || graph.getNode(id)?.type !== 'COMPONENT') {
+      // A component deleted since the file opened leaves its instances the layers they showed.
+      const main = id ? graph.getNode(id) : undefined
+      if (!id || (main && main.type !== 'COMPONENT')) {
         throw new Error(`Missing materialized component ${current.mainComponentId}`)
       }
     }
@@ -230,7 +237,7 @@ export function materializeInstance(
       ),
       componentId:
         current.mainComponentId === null
-          ? (sourceChildren.get(current) ?? null)
+          ? (sourceChildOf(current) ?? null)
           : components.get(current.mainComponentId),
       source: metadata
     })
@@ -240,13 +247,13 @@ export function materializeInstance(
     }
     const node = existing ?? createLayer(current, nodeType, parent, propsWithIdentity, owner)
     if (existing) graph.updateNode(existing.id, propsWithIdentity)
-    const sharedSource = graph.getNode(sourceChildren.get(current) ?? '')
+    const sharedSource = graph.getNode(sourceChildOf(current) ?? '')
     if (sharedSource) shareUnchanged(node, sharedSource)
     nodes.set(current, node)
     if (existing && current !== occurrence && node.type === 'COMPONENT') return node
     applyBindingClaims(current, node, owner)
     recordOwnerAssignments(owner, node, current)
-    const sourceChildId = sourceChildren.get(current)
+    const sourceChildId = sourceChildOf(current)
     if (owner && current.mainComponentId !== null && sourceChildId) {
       setInstanceOverride(
         owner.instanceOverrides,
