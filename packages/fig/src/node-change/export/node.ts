@@ -20,6 +20,7 @@ import {
   DEFAULT_STROKE_WEIGHT
 } from '@open-pencil/scene-graph/constants'
 import { isGeneratedFrame } from '@open-pencil/scene-graph/generated'
+import { lostMainComponent } from '@open-pencil/scene-graph/instances'
 import {
   layoutGridAlignment,
   layoutGridColor,
@@ -411,7 +412,8 @@ function applyInstancePayload(
   nc: KiwiNodeChange,
   localIdCounter: { value: number }
 ): void {
-  if (node.type !== 'INSTANCE' || !node.componentId) return
+  if (node.type !== 'INSTANCE' || !node.componentId || lostMainComponent(context.graph, node))
+    return
   const symbolID = getOrCreateNodeGuid(
     context,
     resolveInstanceComponentId(context, node.componentId),
@@ -979,6 +981,9 @@ function exportKiwiNodeType(node: SceneNode, context: SceneNodeToKiwiContext): s
   if (isPathText) return 'TEXT_PATH'
   // A generated frame that lost its template's layers is kept as a frame; see `writesGeneratedFrame`.
   if (isGeneratedFrame(node) && !writesGeneratedFrame(context, node)) return 'FRAME'
+  // An instance whose main component was deleted has no component to read its layers from, so
+  // it is kept as a frame holding them, as `exportedChildren` writes them.
+  if (lostMainComponent(context.graph, node)) return 'FRAME'
   return context.mapToFigmaType(node.type)
 }
 
@@ -997,11 +1002,12 @@ function nodeToSerialize(context: SceneNodeToKiwiContext, source: SceneNode): Sc
 
 /**
  * An instance writes its contents on its own record, as a generated frame writes its sublayers;
- * a caller may write a record alone.
+ * a caller may write a record alone. An instance whose main component was deleted writes its
+ * layers as records of their own, since no component holds them any more.
  */
 function exportedChildren(node: SceneNode, context: SceneNodeToKiwiContext): SceneNode[] {
   if (
-    node.type === 'INSTANCE' ||
+    (node.type === 'INSTANCE' && !lostMainComponent(context.graph, node)) ||
     writesGeneratedFrame(context, node) ||
     context.writeChildren === false
   ) {

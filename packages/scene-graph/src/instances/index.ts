@@ -38,7 +38,7 @@ import {
 } from './sync'
 
 export { canCreateInstance, createsComponentCycle, cycleSafeParent } from './cycles'
-export { findInstanceAncestor, instanceMainComponent } from './main-component'
+export { findInstanceAncestor, instanceMainComponent, lostMainComponent } from './main-component'
 export {
   INSTANCE_FOLLOWED_FIELDS,
   INSTANCE_OVERRIDE_FIELDS,

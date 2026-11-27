@@ -20,6 +20,21 @@ export function instanceMainComponent(
   return current?.type === 'COMPONENT' ? current : undefined
 }
 
+/**
+ * Whether an instance's main component is no longer in the document, as after deleting it: the
+ * instance still holds the layers it showed, and nothing else in the document holds them.
+ */
+export function lostMainComponent(graph: SceneGraph, instance: SceneNode): boolean {
+  if (instance.type !== 'INSTANCE' || !instance.componentId) return false
+  const seen = new Set<string>()
+  let current = graph.getNode(instance.componentId)
+  while (current?.type === 'INSTANCE' && current.componentId && !seen.has(current.id)) {
+    seen.add(current.id)
+    current = graph.getNode(current.componentId)
+  }
+  return current === undefined
+}
+
 /** Root paint claims also protect a nested copy when its enclosing component syncs it. */
 export function ownsSelfFillField(target: SceneNode, field: string): boolean {
   const own = target.instanceOverrides.self
