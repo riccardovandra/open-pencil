@@ -357,6 +357,9 @@ function editedComponents(
     const guid = component ? archived.byNode.get(component.id) : undefined
     if (guid) components.add(guid)
   }
+  // Instances of a deleted component on pages not loaded yet still name it; loaded, they are
+  // written as frames holding their layers.
+  for (const [guid, nodeId] of archived.byGuid) if (!graph.nodes.has(nodeId)) components.add(guid)
   return [...components]
 }
 

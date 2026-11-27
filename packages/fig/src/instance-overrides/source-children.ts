@@ -21,6 +21,8 @@ export function reconcileOccurrenceStructure(
   }
   const component = components.get(target.mainComponentId)
   if (!component) throw new Error(`Missing component occurrence ${target.mainComponentId}`)
+  // A component deleted since the file opened leaves its instances the layers they had.
+  if (!graph.getNode(component.materialized.root.id)) return
   const nodes = component.materialized.nodes
   // Walk the component's own layers, frames inside it included, beside the instance's.
   const reconcileLayers = (current: InstanceOccurrence, source: InstanceOccurrence): void => {

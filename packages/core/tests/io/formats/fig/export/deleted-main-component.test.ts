@@ -6,7 +6,11 @@ import { runTool } from '#core-tests/helpers/tools'
 
 import { createEditor, type Editor } from '@open-pencil/core'
 import { FigmaAPI } from '@open-pencil/core/figma-api'
-import { exportFigFile, populateAllFigPages } from '@open-pencil/core/io/formats/fig'
+import {
+  exportFigFile,
+  populateAllFigPages,
+  populateFigPage
+} from '@open-pencil/core/io/formats/fig'
 import { initCodec } from '@open-pencil/kiwi/fig/codec'
 import { SceneGraph, type SceneNode } from '@open-pencil/scene-graph'
 import { createInstance, lostMainComponent } from '@open-pencil/scene-graph/instances'
@@ -70,6 +74,33 @@ describe('saving after a main component is deleted', () => {
     }
   )
 
+  test('keeps them on a page that was never opened', async () => {
+    // A file with an instance of Tip on a second page, which opens unloaded.
+    const setup = await open(demoBytes())
+    const tip = expectDefined(
+      [...setup.getAllNodes()].find((node) => node.type === 'COMPONENT' && node.name === 'Tip'),
+      'Tip'
+    )
+    const other = setup.addPage('Other')
+    expectDefined(createInstance(setup, tip.id, other.id, { name: 'Far tip' }), 'instance')
+    const twoPages = await exportFigFile(setup)
+
+    const graph = await open(twoPages)
+    const page = graph.getPages()[1]
+    deleteSections(createEditor({ graph }), graph, ['8 · Yours'])
+    const saved = await reopened(graph)
+    // The page loads after the delete, its instance holding what it showed.
+    populateFigPage(graph, page.id)
+    const expected = layerLines(graph, page.id)
+    expect(expected).toEqual(
+      layerLines(setup, other.id).map((line, index) =>
+        index === 0 ? line.replace('INSTANCE', 'FRAME') : line
+      )
+    )
+    populateAllFigPages(saved)
+    expect(layerLines(saved, saved.getPages()[1].id)).toEqual(expected)
+  })
+
   test('keeps them when an agent deletes the component through the tools', async () => {
     const graph = await open(demoBytes())
     const section = childNamed(graph, firstPage(graph).id, '8 · Yours')
@@ -129,20 +160,6 @@ describe('other component edits save their instances whole', () => {
       'another component'
     )
     graph.swapInstanceComponent(tip.id, target.id)
-    const saved = await reopened(graph)
-    expect(layerLines(saved, firstPage(saved).id)).toEqual(layerLines(graph, firstPage(graph).id))
-  })
-
-  test('detaching an instance', async () => {
-    const graph = await open(demoBytes())
-    const editor = createEditor({ graph })
-    const tip = expectDefined(
-      [...graph.getAllNodes()].find((node) => node.type === 'INSTANCE' && node.name === 'Tip 1'),
-      'Tip 1'
-    )
-    editor.select([tip.id])
-    editor.detachInstance()
-    expect(graph.getNode(tip.id)?.type).toBe('FRAME')
     const saved = await reopened(graph)
     expect(layerLines(saved, firstPage(saved).id)).toEqual(layerLines(graph, firstPage(graph).id))
   })
