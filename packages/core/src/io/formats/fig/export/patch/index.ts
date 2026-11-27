@@ -249,21 +249,29 @@ function addTransitionSlides(
 }
 
 /**
- * An instance whose main component was deleted is written as a frame, and the layers it shows,
- * which the archive kept only in that component, become records of their own.
+ * The archive keeps an instance's layers only in its main component. An instance whose main
+ * component was deleted is written as a frame, and so is a detached one, so the layers they show
+ * become records of their own.
  */
-function addInstancesOfDeletedComponents(graph: SceneGraph, add: (id: string) => unknown): void {
-  for (const [componentId, instanceIds] of graph.instanceIndex) {
-    if (graph.getNode(componentId)) continue
-    for (const instanceId of instanceIds) {
-      const instance = graph.getNode(instanceId)
-      if (!instance || !lostMainComponent(graph, instance)) continue
-      const pending = [instanceId]
-      for (let id = pending.pop(); id !== undefined; id = pending.pop()) {
-        add(id)
-        pending.push(...(graph.getNode(id)?.childIds ?? []))
+function addReleasedInstanceLayers(
+  graph: SceneGraph,
+  changes: ArchiveChangeSummary,
+  add: (id: string) => unknown
+): void {
+  const before = archiveBaseline(graph)?.before
+  const released: string[] = []
+  for (const [componentId, instanceIds] of graph.instanceIndex)
+    if (!graph.getNode(componentId))
+      for (const id of instanceIds) {
+        const instance = graph.getNode(id)
+        if (instance && lostMainComponent(graph, instance)) released.push(id)
       }
-    }
+  for (const id of changes.touched)
+    if (before?.get(id)?.type === 'INSTANCE' && graph.getNode(id)?.type !== 'INSTANCE')
+      released.push(id)
+  for (let id = released.pop(); id !== undefined; id = released.pop()) {
+    add(id)
+    released.push(...(graph.getNode(id)?.childIds ?? []))
   }
 }
 
@@ -322,7 +330,7 @@ function planRecords(
   }
   for (const id of changes.touched) add(id)
   addSetVariants(graph, changes, add)
-  addInstancesOfDeletedComponents(graph, add)
+  addReleasedInstanceLayers(graph, changes, add)
   addModeChangeUsers(graph, add)
   addComponentInstances(graph, records, add)
   addTransitionSlides(graph, changes, add)

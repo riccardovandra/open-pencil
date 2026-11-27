@@ -133,6 +133,34 @@ describe('other component edits save their instances whole', () => {
     expect(layerLines(saved, firstPage(saved).id)).toEqual(layerLines(graph, firstPage(graph).id))
   })
 
+  test('detaching an instance', async () => {
+    const graph = await open(demoBytes())
+    const editor = createEditor({ graph })
+    const tip = expectDefined(
+      [...graph.getAllNodes()].find((node) => node.type === 'INSTANCE' && node.name === 'Tip 1'),
+      'Tip 1'
+    )
+    editor.select([tip.id])
+    editor.detachInstance()
+    expect(graph.getNode(tip.id)?.type).toBe('FRAME')
+    const saved = await reopened(graph)
+    expect(layerLines(saved, firstPage(saved).id)).toEqual(layerLines(graph, firstPage(graph).id))
+  })
+
+  test('detaching an instance', async () => {
+    const graph = await open(demoBytes())
+    const editor = createEditor({ graph })
+    const tip = expectDefined(
+      [...graph.getAllNodes()].find((node) => node.type === 'INSTANCE' && node.name === 'Tip 1'),
+      'Tip 1'
+    )
+    editor.select([tip.id])
+    editor.detachInstance()
+    expect(graph.getNode(tip.id)?.type).toBe('FRAME')
+    const saved = await reopened(graph)
+    expect(layerLines(saved, firstPage(saved).id)).toEqual(layerLines(graph, firstPage(graph).id))
+  })
+
   test('moving a main component to another page', async () => {
     const graph = await open(demoBytes())
     const editor = createEditor({ graph })
